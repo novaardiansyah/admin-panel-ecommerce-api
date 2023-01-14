@@ -1,0 +1,6 @@
+POST http://localhost:8074/codeigniter/v3/admin-panel-ecommerce-api/users
+Content-Type: 'application/json'
+
+{
+  "access_token": "0e071be035b9cc6b3366a8eeba8cfabebd572589"
+}
