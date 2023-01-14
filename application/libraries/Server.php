@@ -58,7 +58,7 @@ class Server
 	/**
 	 * password_credentials
 	 */
-	public function password_credentials()
+	public function password_credentials($req = [])
 	{
 		$ci = get_instance();
 		
@@ -72,6 +72,10 @@ class Server
 				'first_name' => $value['first_name'],
 				'last_name'  => $value['last_name']
 			];
+		}
+
+		if (!empty($req)) {
+			$this->request->request = $req;
 		}
 
 		$storage = new OAuth2\Storage\Memory(array('user_credentials' => $temp_users));

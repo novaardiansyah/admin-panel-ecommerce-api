@@ -1,31 +1,7 @@
 <?php
 defined('BASEPATH') or exit('No direct script access allowed');
 
-function getTimes($data = 'now', $format = 'Y-m-d H:i:s')
-{
-  date_default_timezone_set('Asia/Jakarta');
-  return date($format, strtotime($data));
-}
-
-function format_date($data, $format = 'Y-m-d H:i:s')
-{
-  date_default_timezone_set('Asia/Jakarta');
-
-  if (strpos($data, '/') !== false) {
-    $data = str_replace('/', '-', $data);
-  }
-
-  return date_format(date_create($data), $format);
-}
-
-function arrayToObject($data)
-{
-  if (!is_array($data)) {
-    return $data;
-  }
-
-  return json_decode(json_encode($data), true);
-}
+use Dotenv\Dotenv;
 
 function getReqBody($key = 'key', $default = null, $data = [])
 {
@@ -53,6 +29,24 @@ function getReqBody($key = 'key', $default = null, $data = [])
   }
 
   return $res;
+}
+
+
+function getTimes($data = 'now', $format = 'Y-m-d H:i:s')
+{
+  date_default_timezone_set('Asia/Jakarta');
+  return date($format, strtotime($data));
+}
+
+function format_date($data, $format = 'Y-m-d H:i:s')
+{
+  date_default_timezone_set('Asia/Jakarta');
+
+  if (strpos($data, '/') !== false) {
+    $data = str_replace('/', '-', $data);
+  }
+
+  return date_format(date_create($data), $format);
 }
 
 function random_tokens($length, $type = null, $seconds = false)
@@ -110,4 +104,141 @@ function crypto_rand_secure($min, $max)
   } while ($rnd > $range);
 
   return $min + $rnd;
+}
+
+function arrayToObject($array)
+{
+  if (!is_array($array)) {
+    return $array;
+  }
+
+  $object = new stdClass();
+  if (is_array($array) && count($array) > 0) {
+    foreach ($array as $name => $value) {
+      $name = trim($name);
+      if (!empty($name)) {
+        $object->$name = arrayToObject($value);
+      }
+    }
+    return $object;
+  } else {
+    return FALSE;
+  }
+}
+
+function encode($value)
+{
+  if (!$value) return false;
+
+  $ci = get_instance();
+
+  $dotenv = Dotenv::createImmutable(dirname(__FILE__, 3));
+  $dotenv->load();
+
+  $key       = sha1($_ENV['ENCODED_KEY']);
+  $strLen    = strlen($value);
+  $keyLen    = strlen($key);
+  $j         = 0;
+  $crypttext = '';
+
+  for ($i = 0; $i < $strLen; $i++) {
+    $ordStr = ord(substr($value, $i, 1));
+    if ($j == $keyLen) {
+      $j = 0;
+    }
+    $ordKey = ord(substr($key, $j, 1));
+    $j++;
+    $crypttext .= strrev(base_convert(dechex($ordStr + $ordKey), 16, 36));
+  }
+
+  return base64_encode($crypttext);
+}
+
+function decode($value)
+{
+  if (!$value) return false;
+
+  $ci = get_instance();
+
+  $dotenv = Dotenv::createImmutable(dirname(__FILE__, 3));
+  $dotenv->load();
+
+  $value       = base64_decode($value);
+  $key         = sha1($_ENV['ENCODED_KEY']);
+  $strLen      = strlen($value);
+  $keyLen      = strlen($key);
+  $j           = 0;
+  $decrypttext = '';
+
+  for ($i = 0; $i < $strLen; $i += 2) {
+    $ordStr = hexdec(base_convert(strrev(substr($value, $i, 2)), 36, 16));
+    if ($j == $keyLen) {
+      $j = 0;
+    }
+    $ordKey = ord(substr($key, $j, 1));
+    $j++;
+    $decrypttext .= chr($ordStr - $ordKey);
+  }
+
+  return $decrypttext;
+}
+
+function requestApi($url, $method = 'POST', $data = [], $contentType = 'form-urlencoded')
+{
+  $ci = get_instance();
+  
+  $send = [];
+  $data = array_merge($data, $send);
+  
+  $curl = curl_init();
+
+  $params = [
+    CURLOPT_URL            => $url,
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_ENCODING       => '',
+    CURLOPT_MAXREDIRS      => 10,
+    CURLOPT_TIMEOUT        => 0,
+    CURLOPT_FOLLOWLOCATION => true,
+    CURLOPT_HTTP_VERSION   => CURL_HTTP_VERSION_1_1,
+    CURLOPT_CUSTOMREQUEST  => $method
+  ];
+
+  if ($method == 'POST' || $method == 'PUT' || $method == 'DELETE' || $method == 'PATCH') {
+    $params[CURLOPT_POSTFIELDS] = $data;
+
+    if ($contentType == 'form-data') {
+      $params[CURLOPT_HTTPHEADER] = [
+        "Content-Type: multipart/form-data",
+        "cache-control: no-cache"
+      ];
+    } else if ($contentType == 'form-urlencoded') {
+      $params[CURLOPT_HTTPHEADER] = [
+        "Content-Type: application/x-www-form-urlencoded",
+        "cache-control: no-cache"
+      ];
+
+      $params[CURLOPT_POSTFIELDS] = http_build_query($data);
+    } else {
+      $params[CURLOPT_HTTPHEADER] = [
+        "Content-Type: application/json",
+        "cache-control: no-cache"
+      ];
+    }
+  }
+
+  curl_setopt_array($curl, $params);
+
+  $error = curl_error($curl);
+  
+  if ($error) {
+    curl_close($curl);
+    return ['status' => false, 'status_code' => 500, 'message' => $error];
+  }
+  
+  $response = curl_exec($curl);
+  $response = json_decode($response, FALSE);
+
+  curl_close($curl);
+
+  return $response;
 }
