@@ -1,12 +1,5 @@
 <?php
-
-/**
- * @package     Server.php
- * @author      Aditya Nursyahbani
- * @link        http://www.aditya-nursyahbani.net/2016/10/tutorial-oauth2-dengan-codeigniter.html
- * @copyright   Copyright(c) 2016
- * @version     1.0.0
- **/
+defined('BASEPATH') or exit('No direct script access allowed');
 date_default_timezone_set('Asia/Jakarta');
 
 use Dotenv\Dotenv;
@@ -40,7 +33,6 @@ class Server
 			'save_queries' => TRUE
 		];
 
-		// require_once(APPPATH . 'config\database.php');
 		require_once(__DIR__ . '/../libraries/oauth2/src/OAuth2/Autoloader.php');
 
 		$config = $db['default'];
@@ -68,8 +60,21 @@ class Server
 	 */
 	public function password_credentials()
 	{
-		$users = array("adit" => array("password" => 'pass', 'first_name' => 'aditya', 'last_name' => 'nursyahbani'));
-		$storage = new OAuth2\Storage\Memory(array('user_credentials' => $users));
+		$ci = get_instance();
+		
+		$users = $ci->db->query("SELECT a.username, a.password, a.first_name, a.last_name FROM oauth_users AS a")->result_array();
+
+		$temp_users = [];
+
+		foreach ($users as $key => $value) {
+			$temp_users[$value['username']] = [
+				'password'   => $value['password'],
+				'first_name' => $value['first_name'],
+				'last_name'  => $value['last_name']
+			];
+		}
+
+		$storage = new OAuth2\Storage\Memory(array('user_credentials' => $temp_users));
 		$this->server->addGrantType(new OAuth2\GrantType\UserCredentials($storage));
 		$this->server->handleTokenRequest($this->request)->send();
 	}
