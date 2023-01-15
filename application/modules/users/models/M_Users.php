@@ -73,12 +73,12 @@ class M_Users extends CI_Model
 
   public function login()
   {
-    $clientId     = getReqBody('clientId');
-    $clientSecret = getReqBody('clientSecret');
+    $clientId     = getReqBody('clientId', '', $_POST);
+    $clientSecret = getReqBody('clientSecret', '', $_POST);
 
-    $username   = getReqBody('username');
-    $password   = getReqBody('password');
-    $rememberMe = getReqBody('rememberMe');
+    $username   = getReqBody('username', '', $_POST);
+    $password   = getReqBody('password', '', $_POST);
+    $rememberMe = getReqBody('rememberMe', '', $_POST);
 
     $user = $this->db->query("SELECT a.id, a.roleId, a.companyId, a.name, a.username, a.email, a.phone, a.address, a.password, a.isActive, a.isDeleted FROM users AS a WHERE a.username = ?", [$username])->row();
 
@@ -142,5 +142,33 @@ class M_Users extends CI_Model
     if (!isset($req->access_token)) return ['status' => false, 'status_code' => 401, 'message' => 'Client ID or Client Secret is wrong.', 'data' => null];
 
     return ['status' => true, 'status_code' => 200, 'message' => 'Token generated successfully.', 'data' => $req];
+  }
+
+  public function store_server_log()
+  {
+    $log_ip_address = getReqBody('log_ip_address', [], $_POST);
+    $log_user_agent = getReqBody('log_user_agent', [], $_POST);
+    $log_platform   = getReqBody('log_platform', [], $_POST);
+    $log_data       = getReqBody('log_data', [], $_POST);
+
+    $alreadyStored = [];
+
+    foreach ($log_data as $key => $value) {
+      $value = arrayToObject($value);
+
+      $data = [
+        'ip_address'   => $log_ip_address,
+        'user_agent'   => $log_user_agent,
+        'platform'     => $log_platform,
+        'OccurringUrl' => $value->url,
+        'OccurringAt'  => $value->entryAt,
+        'response'     => json_encode($value->error)
+      ];
+
+      $this->db->insert('server_logs', $data);
+      array_push($alreadyStored, $data);
+    }
+
+    return ['status' => true, 'status_code' => 200, 'message' => 'Log stored successfully.', 'data' => $alreadyStored];
   }
 }
