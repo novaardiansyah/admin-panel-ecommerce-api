@@ -3,35 +3,6 @@ defined('BASEPATH') or exit('No direct script access allowed');
 
 use Dotenv\Dotenv;
 
-function getReqBody($key = 'key', $default = null, $data = [])
-{
-  $ci = get_instance();
-
-  $res = $default;
-
-  if (isset($data[$key])) {
-    $res = $data[$key];
-  } else if ($ci->input->post($key)) {
-    $res = $ci->input->post($key);
-  } else if ($ci->input->get($key)) {
-    $res = $ci->input->get($key);
-  }
-
-  // * if $res == string
-  if (is_string($res)) {
-    $res = trim($res);
-  }
-
-  // * if $res == array
-  if (is_array($res)) {
-    $res = array_map('trim', $res);
-    $res = arrayToObject($res);
-  }
-
-  return $res;
-}
-
-
 function getTimes($data = 'now', $format = 'Y-m-d H:i:s')
 {
   date_default_timezone_set('Asia/Jakarta');
@@ -241,4 +212,47 @@ function requestApi($url, $method = 'POST', $data = [], $contentType = 'form-url
   curl_close($curl);
 
   return $response;
+}
+
+function cleanInput($input)
+{
+  $search = array(
+    '@<script[^>]*?>.*?</script>@si',   // Strip out javascript
+    '@<[\/\!]*?[^<>]*?>@si',            // Strip out HTML tags
+    '@<style[^>]*?>.*?</style>@siU',    // Strip style tags properly
+    '@<![\s\S]*?--[ \t\n\r]*>@'         // Strip multi-line comments
+  );
+
+  $output = preg_replace($search, '', $input);
+  return $output;
+}
+
+function getReqBody($key = 'key', $default = null, $data = [])
+{
+  $ci = get_instance();
+
+  $res = $default;
+
+  if (isset($data[$key])) {
+    $res = $data[$key];
+  } else if ($ci->input->post($key)) {
+    $res = $ci->input->post($key);
+  } else if ($ci->input->get($key)) {
+    $res = $ci->input->get($key);
+  }
+
+  $res = cleanInput($res);
+
+  // * if $res == string
+  if (is_string($res)) {
+    $res = trim($res);
+  }
+
+  // * if $res == array
+  if (is_array($res)) {
+    $res = array_map('trim', $res);
+    $res = arrayToObject($res);
+  }
+
+  return $res;
 }
