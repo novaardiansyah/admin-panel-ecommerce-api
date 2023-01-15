@@ -235,23 +235,16 @@ function getReqBody($key = 'key', $default = null, $data = [])
 
   if (isset($data[$key])) {
     $res = $data[$key];
-  } else if ($ci->input->post($key)) {
-    $res = $ci->input->post($key);
-  } else if ($ci->input->get($key)) {
-    $res = $ci->input->get($key);
+  } else if (isset($_POST[$key])) {
+    $res = $_POST[$key];
+  } else if (isset($_GET[$key])) {
+    $res = $_GET[$key];
   }
-
-  $res = cleanInput($res);
 
   // * if $res == string
   if (is_string($res)) {
+    $res = cleanInput($res);
     $res = trim($res);
-  }
-
-  // * if $res == array
-  if (is_array($res)) {
-    $res = array_map('trim', $res);
-    $res = arrayToObject($res);
   }
 
   return $res;

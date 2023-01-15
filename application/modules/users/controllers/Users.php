@@ -32,4 +32,11 @@ class Users extends REST_Controller
     $res = $this->api->login();
     $res ? $this->response($res, 200) : $this->response(NULL, 404);
   }
+
+  public function store_server_log_post()
+  {
+    $this->server->require_scope("admin");
+    $res = $this->api->store_server_log();
+    $res ? $this->response($res, 200) : $this->response(NULL, 404);
+  }
 }
