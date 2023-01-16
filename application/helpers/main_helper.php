@@ -249,3 +249,34 @@ function getReqBody($key = 'key', $default = null, $data = [])
 
   return $res;
 }
+
+function responseModelApi($params = [], $data = [])
+{
+  $ci = get_instance();
+  
+  $params = arrayToObject($params);
+
+  if ($params->status == true)
+  {
+    $res = [
+      'status'      => true,
+      'status_code' => isset($params->status_code) ? $params->status_code : 200,
+      'status_text' => isset($params->status_text) ? $params->status_text : 'OK',
+      'message'     => $params->message,
+      'data'        => $data,
+      'error'       => NULL
+    ];
+  } else {
+    $res = [
+      'status'      => false,
+      'status_code' => isset($params->status_code) ? $params->status_code : 400,
+      'status_text' => isset($params->status_text) ? $params->status_text : 'Bad Request',
+      'message'     => $params->message,
+      'data'        => NULL,
+      'error'       => $data
+    ];
+  }
+
+
+  return $res;
+}
