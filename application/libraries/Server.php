@@ -3,6 +3,7 @@ defined('BASEPATH') or exit('No direct script access allowed');
 date_default_timezone_set('Asia/Jakarta');
 
 use Dotenv\Dotenv;
+use OAuth2\Request;
 
 class Server
 {
@@ -57,6 +58,14 @@ class Server
 
 	/**
 	 * password_credentials
+	 * $req = [
+			'grant_type'    => 'password',
+			'username'      => $oauth_user->username,
+			'password'      => $oauth_user->password,
+			'client_id'     => $oauth_user->client_id,
+			'client_secret' => $oauth_user->client_secret,
+			'scope'         => $oauth_user->scope
+		];
 	 */
 	public function password_credentials($req = [])
 	{
@@ -76,6 +85,20 @@ class Server
 
 		if (!empty($req)) {
 			$this->request->request = $req;
+		}
+
+		$temp_request = $this->request->request;
+
+		$hasToken = $ci->db->query("SELECT a.access_token, a.client_id, a.user_id, a.expires, a.scope FROM oauth_access_tokens AS a WHERE a.client_id = ? AND a.user_id = ? AND a.scope = ?", [$temp_request['client_id'], $temp_request['username'], $temp_request['scope']])->row();
+
+		if (!empty($hasToken)) {
+			$ci->db->delete('oauth_access_tokens', ['access_token' => $hasToken->access_token, 'scope' => $hasToken->scope]);
+		}
+
+		$hasRefeshToken = $ci->db->query("SELECT a.refresh_token, a.client_id, a.expires, a.user_id, a.scope FROM oauth_refresh_tokens AS a WHERE a.client_id = ? AND a.user_id = ? AND a.scope = ?", [$temp_request['client_id'], $temp_request['username'], $temp_request['scope']])->row();
+
+		if (!empty($hasRefeshToken)) {
+			$ci->db->delete('oauth_refresh_tokens', ['refresh_token' => $hasRefeshToken->refresh_token, 'scope' => $hasRefeshToken->scope]);
 		}
 
 		$storage = new OAuth2\Storage\Memory(array('user_credentials' => $temp_users));
@@ -101,10 +124,22 @@ class Server
 	 */
 	public function require_scope($scope = "")
 	{
-		if (!$this->server->verifyResourceRequest($this->request, $this->response, $scope)) {
-			$this->server->getResponse()->send();
-			die;
+		$check = $this->server->verifyResourceRequest($this->request, $this->response, $scope);
+		
+		if (!$check) {
+			$this->response->setStatusCode(401, "Unauthorized");
+			$this->response->addParameters([
+				"status"      => false,
+				"status_code" => 401,
+				"message"     => "Unauthorized"
+			]);
+			$this->response->send(); exit;
 		}
+
+		// if (!$this->server->verifyResourceRequest($this->request, $this->response, $scope)) {
+		// 	$this->server->getResponse()->send();
+		// 	die;
+		// }
 	}
 
 	public function check_client_id()
