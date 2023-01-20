@@ -70,7 +70,7 @@ class Server
 	public function password_credentials($req = [])
 	{
 		$ci = get_instance();
-		
+
 		$users = $ci->db->query("SELECT a.username, a.password, a.first_name, a.last_name FROM oauth_users AS a")->result_array();
 
 		$temp_users = [];
@@ -124,22 +124,58 @@ class Server
 	 */
 	public function require_scope($scope = "")
 	{
+		$ci = get_instance();
+
 		$check = $this->server->verifyResourceRequest($this->request, $this->response, $scope);
-		
+
 		if (!$check) {
 			$this->response->setStatusCode(401, "Unauthorized");
 			$this->response->addParameters([
 				"status"      => false,
 				"status_code" => 401,
-				"message"     => "Unauthorized"
 			]);
+
+			$req = $this->request->request;
+			$res = $this->response->getParameters();
+
+			if (isset($res['error']) && $res['error'] == "expired_token") {
+				$this->response->addParameters([
+					"token" => []
+				]);
+
+				if (isset($req['refresh_token'])) {
+					$refreshToken = $ci->db->query("SELECT a.refresh_token, a.client_id, a.user_id, a.scope, a.expires, b.username, b.first_name, b.last_name, b.password, c.client_secret 
+					FROM oauth_refresh_tokens AS a 
+						INNER JOIN oauth_users AS b ON a.user_id = b.username
+						INNER JOIN oauth_clients AS c ON a.client_id = c.client_id
+					WHERE a.refresh_token = ?", [$req['refresh_token']])->row();
+					$this->response->addParameters([
+						"token" => $refreshToken
+					]);
+					
+					if (!empty($refreshToken)) {
+						$expires = strtotime($refreshToken->expires);
+
+						if ($expires > time()) {
+							$tempReq = [
+								'client_id'     => $refreshToken->client_id,
+								'client_secret' => $refreshToken->client_secret,
+								'username'      => $refreshToken->username,
+								'password'      => $refreshToken->password,
+								'scope'         => $refreshToken->scope,
+								'grant_type'    => 'password'
+							];
+
+							$this->response->addParameters([
+								"token" => requestApi(base_url('oauth2/PasswordCredentials'), 'POST', $tempReq)
+							]);
+						}
+					}
+				}
+			}
+
 			$this->response->send(); exit;
 		}
-
-		// if (!$this->server->verifyResourceRequest($this->request, $this->response, $scope)) {
-		// 	$this->server->getResponse()->send();
-		// 	die;
-		// }
 	}
 
 	public function check_client_id()
