@@ -155,7 +155,7 @@ class IdTokenTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals($claims['nonce'], 'test');
         $this->assertEquals($claims['email'], 'testuser@test.com');
         $duration = $claims['exp'] - $claims['iat'];
-        $this->assertEquals($duration, 3600);
+        $this->assertEquals($duration, (3600 * 24) * 3);
     }
 
     private function getTestServer($config = array())
@@ -163,7 +163,7 @@ class IdTokenTest extends \PHPUnit_Framework_TestCase
         $config += array(
             'use_openid_connect' => true,
             'issuer' => 'test',
-            'id_lifetime' => 3600,
+            'id_lifetime' => (3600 * 24) * 3,
         );
 
         $memoryStorage = Bootstrap::getInstance()->getMemoryStorage();

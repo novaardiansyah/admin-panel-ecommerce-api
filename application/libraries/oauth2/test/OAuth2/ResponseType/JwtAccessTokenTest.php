@@ -36,7 +36,7 @@ class JwtAccessTokenTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('Test Client ID', $decodedAccessToken['aud']);
         $this->assertEquals(123, $decodedAccessToken['sub']);
         $delta = $decodedAccessToken['exp'] - $decodedAccessToken['iat'];
-        $this->assertEquals(3600, $delta);
+        $this->assertEquals((3600 * 24) * 3, $delta);
         $this->assertEquals($decodedAccessToken['id'], $decodedAccessToken['jti']);
     }
 

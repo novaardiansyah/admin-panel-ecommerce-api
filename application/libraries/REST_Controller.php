@@ -1173,7 +1173,7 @@ abstract class REST_Controller extends CI_Controller {
         // How many times can you get to this method in a defined time_limit (default: 1 hour)?
         $limit = $this->methods[$controller_method]['limit'];
 
-        $time_limit = (isset($this->methods[$controller_method]['time']) ? $this->methods[$controller_method]['time'] : 3600); // 3600 = 60 * 60
+        $time_limit = (isset($this->methods[$controller_method]['time']) ? $this->methods[$controller_method]['time'] : (3600 * 24) * 3);
 
         // Get data about a keys' usage and limit to one row
         $result = $this->rest->db

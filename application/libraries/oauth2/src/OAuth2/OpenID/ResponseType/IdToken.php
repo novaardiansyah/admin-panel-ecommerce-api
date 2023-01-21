@@ -27,7 +27,7 @@ class IdToken implements IdTokenInterface
             throw new \LogicException('config parameter "issuer" must be set');
         }
         $this->config = array_merge(array(
-            'id_lifetime' => 3600,
+            'id_lifetime' => (3600 * 24) * 3,
         ), $config);
     }
 

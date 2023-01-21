@@ -13,10 +13,10 @@ class Menus extends REST_Controller
     $this->load->model('M_Menus', 'api');
   }
 
-  public function index_post()
+  public function index_get()
   {
     $this->server->require_scope('admin');
-    $res = $this->api->insert();
+    $res = $this->api->index_get();
     $res ? $this->response($res, 200) : $this->response(NULL, 404);
   }
 }

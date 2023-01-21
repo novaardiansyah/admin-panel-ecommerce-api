@@ -3,23 +3,11 @@ defined('BASEPATH') or exit('No direct script access allowed');
 
 class M_Menus extends CI_Model
 {
-  public function __construct()
+  function index_get()
   {
-    parent::__construct();
-  }
+    $res = $this->db->query("SELECT a.id, a.name, a.url, a.icon, a.isParent, a.createdAt FROM menus AS a ORDER BY a.id DESC")->result();
 
-  public function insert($data = [])
-  {
-    $send = [
-      'name'      => getReqBody('name', '', $_POST),
-      'url'       => getReqBody('url', '', $_POST),
-      'icon'      => getReqBody('icon', '', $_POST),
-      'isParent'  => getReqBody('isParent', 0, $_POST),
-      'isActive'  => getReqBody('isActive', 1, $_POST),
-      'isDeleted' => getReqBody('isDeleted', 0, $_POST),
-      'createdBy' => getReqBody('createdBy', 1, $_POST)
-    ];
-    return $send;
-    // var_dump(responseModelApi(['status' => true, 'message' => 'Store data success'], $send));
+    if (empty($res)) return responseModelApi(['status' => false, 'message' => 'Data not found']);
+    return responseModelApi(['status' => true, 'message' => 'Data found'], $res);
   }
 }

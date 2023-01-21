@@ -58,14 +58,6 @@ class Server
 
 	/**
 	 * password_credentials
-	 * $req = [
-			'grant_type'    => 'password',
-			'username'      => $oauth_user->username,
-			'password'      => $oauth_user->password,
-			'client_id'     => $oauth_user->client_id,
-			'client_secret' => $oauth_user->client_secret,
-			'scope'         => $oauth_user->scope
-		];
 	 */
 	public function password_credentials($req = [])
 	{
@@ -85,20 +77,6 @@ class Server
 
 		if (!empty($req)) {
 			$this->request->request = $req;
-		}
-
-		$temp_request = $this->request->request;
-
-		$hasToken = $ci->db->query("SELECT a.access_token, a.client_id, a.user_id, a.expires, a.scope FROM oauth_access_tokens AS a WHERE a.client_id = ? AND a.user_id = ? AND a.scope = ?", [$temp_request['client_id'], $temp_request['username'], $temp_request['scope']])->row();
-
-		if (!empty($hasToken)) {
-			$ci->db->delete('oauth_access_tokens', ['access_token' => $hasToken->access_token, 'scope' => $hasToken->scope]);
-		}
-
-		$hasRefeshToken = $ci->db->query("SELECT a.refresh_token, a.client_id, a.expires, a.user_id, a.scope FROM oauth_refresh_tokens AS a WHERE a.client_id = ? AND a.user_id = ? AND a.scope = ?", [$temp_request['client_id'], $temp_request['username'], $temp_request['scope']])->row();
-
-		if (!empty($hasRefeshToken)) {
-			$ci->db->delete('oauth_refresh_tokens', ['refresh_token' => $hasRefeshToken->refresh_token, 'scope' => $hasRefeshToken->scope]);
 		}
 
 		$storage = new OAuth2\Storage\Memory(array('user_credentials' => $temp_users));
@@ -136,45 +114,28 @@ class Server
 			]);
 
 			$req = $this->request->request;
-			$res = $this->response->getParameters();
+			if (empty($req)) {
+				$req = $this->request->query;
+			}
 
-			if (isset($res['error']) && $res['error'] == "expired_token") {
-				$this->response->addParameters([
-					"token" => []
-				]);
+			if (isset($req['access_token'])) {
+				$hasToken = $ci->db->query("SELECT a.access_token, a.client_id, a.user_id, a.expires, a.scope FROM oauth_access_tokens AS a WHERE a.access_token = ?", [$req['access_token']])->row();
 
-				if (isset($req['refresh_token'])) {
-					$refreshToken = $ci->db->query("SELECT a.refresh_token, a.client_id, a.user_id, a.scope, a.expires, b.username, b.first_name, b.last_name, b.password, c.client_secret 
-					FROM oauth_refresh_tokens AS a 
-						INNER JOIN oauth_users AS b ON a.user_id = b.username
-						INNER JOIN oauth_clients AS c ON a.client_id = c.client_id
-					WHERE a.refresh_token = ?", [$req['refresh_token']])->row();
-					$this->response->addParameters([
-						"token" => $refreshToken
-					]);
-					
-					if (!empty($refreshToken)) {
-						$expires = strtotime($refreshToken->expires);
-
-						if ($expires > time()) {
-							$tempReq = [
-								'client_id'     => $refreshToken->client_id,
-								'client_secret' => $refreshToken->client_secret,
-								'username'      => $refreshToken->username,
-								'password'      => $refreshToken->password,
-								'scope'         => $refreshToken->scope,
-								'grant_type'    => 'password'
-							];
-
-							$this->response->addParameters([
-								"token" => requestApi(base_url('oauth2/PasswordCredentials'), 'POST', $tempReq)
-							]);
-						}
-					}
+				if (!empty($hasToken)) {
+					$ci->db->delete('oauth_access_tokens', ['access_token' => $hasToken->access_token, 'scope' => $hasToken->scope]);
 				}
 			}
 
-			$this->response->send(); exit;
+			if (isset($req['refresh_token'])) {
+				$hasRefeshToken = $ci->db->query("SELECT a.refresh_token, a.client_id, a.expires, a.user_id, a.scope FROM oauth_refresh_tokens AS a WHERE a.refresh_token = ?", [$req['refresh_token']])->row();
+
+				if (!empty($hasRefeshToken)) {
+					$ci->db->delete('oauth_refresh_tokens', ['refresh_token' => $hasRefeshToken->refresh_token, 'scope' => $hasRefeshToken->scope]);
+				}
+			}
+
+			$this->response->send();
+			exit;
 		}
 	}
 
