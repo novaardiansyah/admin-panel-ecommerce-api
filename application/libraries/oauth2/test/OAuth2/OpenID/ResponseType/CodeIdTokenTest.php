@@ -64,7 +64,7 @@ class CodeIdTokenTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals($claims['aud'], 'Test Client ID');
         $this->assertEquals($claims['nonce'], 'test');
         $duration = $claims['exp'] - $claims['iat'];
-        $this->assertEquals($duration, 3600);
+        $this->assertEquals($duration, (3600 * 24) * 3);
     }
 
     public function testUserClaimsWithUserId()
@@ -162,7 +162,7 @@ class CodeIdTokenTest extends \PHPUnit_Framework_TestCase
         $config += array(
             'use_openid_connect' => true,
             'issuer' => 'test',
-            'id_lifetime' => 3600,
+            'id_lifetime' => (3600 * 24) * 3,
             'allow_implicit' => true,
         );
 
