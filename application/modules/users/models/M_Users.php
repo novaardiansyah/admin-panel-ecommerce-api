@@ -82,13 +82,13 @@ class M_Users extends CI_Model
 
     $user = $this->db->query("SELECT a.id, a.roleId, a.companyId, a.name, a.username, a.email, a.phone, a.address, a.password, a.isActive, a.isDeleted FROM users AS a WHERE a.username = ?", [$username])->row();
 
-    if (empty($user)) return ['status' => false, 'status_code' => 401, 'message' => 'Username not found', 'data' => null];
+    if (empty($user)) return responseModelApi(['status' => false, 'message' => 'Username or password is wrong.']);
 
-    if (!password_verify($password, $user->password)) return ['status' => false, 'status_code' => 401, 'message' => 'Username or password is wrong.', 'data' => null];
-
-    if ($user->isActive == 0) return ['status' => false, 'status_code' => 401, 'message' => 'This account has not been activated.', 'data' => null];
-
-    if ($user->isDeleted == 1) return ['status' => false, 'status_code' => 401, 'message' => 'This account has been deleted.', 'data' => null];
+    if (!password_verify($password, $user->password)) return responseModelApi(['status' => false, 'message' => 'Username or password is wrong.']);
+    
+    if ($user->isActive == 0) return responseModelApi(['status' => false, 'message' => 'This account has not been activated.']);
+    
+    if ($user->isDeleted == 1) return responseModelApi(['status' => false, 'message' => 'This account has been deleted.']);
 
     $response = [
       'id'        => $user->id,
@@ -108,12 +108,7 @@ class M_Users extends CI_Model
 
     $response['token'] = $credential->data;
 
-    return [
-      'status'      => true,
-      'status_code' => 200,
-      'message'     => 'Login success',
-      'data'        => $response
-    ];
+    return responseModelApi(['status' => true, 'message' => 'Login Successfully, Please wait...'], $response);
   }
 
   private function password_credentials($data = [])
