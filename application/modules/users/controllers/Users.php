@@ -30,7 +30,7 @@ class Users extends REST_Controller
   public function login_post()
   {
     $res = $this->api->login();
-    $res ? $this->response($res, 200) : $this->response(NULL, 404);
+    $res ? $this->response($res, $res['status_code']) : $this->response(NULL, 404);
   }
 
   public function store_server_log_post()
