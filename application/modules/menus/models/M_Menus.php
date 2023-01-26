@@ -5,7 +5,7 @@ class M_Menus extends CI_Model
 {
   function index_get()
   {
-    $res = $this->db->query("SELECT a.id, a.name, a.url, a.icon, a.isParent, a.createdAt FROM menus AS a ORDER BY a.id DESC")->result();
+    $res = $this->db->query("SELECT a.id, a.name, a.url, a.icon, a.isParent, a.isActive, a.createdAt, a.updatedAt FROM menus AS a ORDER BY a.id DESC")->result();
 
     if (empty($res)) return responseModelApi(['status' => false, 'message' => 'Data not found']);
     return responseModelApi(['status' => true, 'message' => 'Data found'], $res);
